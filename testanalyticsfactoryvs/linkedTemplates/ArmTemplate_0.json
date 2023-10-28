@@ -1,0 +1,326 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "testanalyticsfactoryvs"
+		},
+		"Analytics_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Analytics'"
+		},
+		"Customers_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Customers'"
+		},
+		"Orders_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Orders'"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/Analytics')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('Analytics_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Customers')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('Customers_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Orders')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('Orders_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CustomerOrdersCountReport')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Analytics",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "OrdersCount",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "CustomerOrdersCountReport"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Analytics')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/customer_dataset')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Customers",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Id",
+						"type": "int",
+						"precision": 10,
+						"scale": 0
+					},
+					{
+						"name": "Name",
+						"type": "nvarchar",
+						"precision": 0,
+						"scale": 0
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "Customers"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Customers')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/order_dataset')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Orders",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Id",
+						"type": "int",
+						"precision": 10,
+						"scale": 0
+					},
+					{
+						"name": "CustomerId",
+						"type": "int",
+						"precision": 10,
+						"scale": 0
+					},
+					{
+						"name": "Details",
+						"type": "nvarchar",
+						"precision": 0,
+						"scale": 0
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "Orders"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Orders')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/customer_orders_report_dataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "customer_dataset",
+								"type": "DatasetReference"
+							},
+							"name": "Customers"
+						},
+						{
+							"dataset": {
+								"referenceName": "order_dataset",
+								"type": "DatasetReference"
+							},
+							"name": "Orders"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "CustomerOrdersCountReport",
+								"type": "DatasetReference"
+							},
+							"name": "CustomerOrdersCountReport"
+						}
+					],
+					"transformations": [
+						{
+							"name": "customerorders"
+						},
+						{
+							"name": "Group"
+						},
+						{
+							"name": "Report"
+						},
+						{
+							"name": "AlterRow"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Id as integer,",
+						"          Name as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'SERIALIZABLE',",
+						"     format: 'table') ~> Customers",
+						"source(output(",
+						"          Id as integer,",
+						"          CustomerId as integer,",
+						"          Details as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> Orders",
+						"Customers, Orders join(Customers@Id == CustomerId,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> customerorders",
+						"customerorders aggregate(groupBy(Customers@Id),",
+						"     OrdersCount = count(Orders@Id)) ~> Group",
+						"Group select(mapColumn(",
+						"          Id,",
+						"          OrdersCount",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> Report",
+						"Report alterRow(deleteIf(isDelete()),",
+						"     upsertIf(isUpsert()),",
+						"     insertIf(isInsert()),",
+						"     updateIf(isUpdate())) ~> AlterRow",
+						"AlterRow sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          Id as integer,",
+						"          OrdersCount as integer",
+						"     ),",
+						"     deletable:true,",
+						"     insertable:true,",
+						"     updateable:true,",
+						"     upsertable:true,",
+						"     keys:['Id'],",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> CustomerOrdersCountReport"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/customer_dataset')]",
+				"[concat(variables('factoryId'), '/datasets/order_dataset')]",
+				"[concat(variables('factoryId'), '/datasets/CustomerOrdersCountReport')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/customer_orders_count_report_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Customer order report data flow",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "customer_orders_report_dataflow",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"Customers": {},
+									"Orders": {},
+									"CustomerOrdersCountReport": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-10-28T21:03:03Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/customer_orders_report_dataflow')]"
+			]
+		}
+	]
+}

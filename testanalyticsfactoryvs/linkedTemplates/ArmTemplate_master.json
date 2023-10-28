@@ -1,0 +1,63 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "testanalyticsfactoryvs"
+		},
+		"Analytics_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Analytics'"
+		},
+		"Customers_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Customers'"
+		},
+		"Orders_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Orders'"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "testanalyticsfactoryvs_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"Analytics_connectionString": {
+						"value": "[parameters('Analytics_connectionString')]"
+					},
+					"Customers_connectionString": {
+						"value": "[parameters('Customers_connectionString')]"
+					},
+					"Orders_connectionString": {
+						"value": "[parameters('Orders_connectionString')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
