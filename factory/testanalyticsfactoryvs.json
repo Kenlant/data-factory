@@ -1,0 +1,9 @@
+{
+	"name": "testanalyticsfactoryvs",
+	"location": "northeurope",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "2f86e54c-bdd9-4fec-aaf7-6412daf3f4a7",
+		"tenantId": "6208b4ac-6efb-4903-9b70-2476d05323e3"
+	}
+}

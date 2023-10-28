@@ -1,0 +1,28 @@
+{
+	"name": "CustomerOrdersCountReport",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Analytics",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "OrdersCount",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "CustomerOrdersCountReport"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

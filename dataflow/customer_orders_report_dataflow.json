@@ -1,0 +1,97 @@
+{
+	"name": "customer_orders_report_dataflow",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "customer_dataset",
+						"type": "DatasetReference"
+					},
+					"name": "Customers"
+				},
+				{
+					"dataset": {
+						"referenceName": "order_dataset",
+						"type": "DatasetReference"
+					},
+					"name": "Orders"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "CustomerOrdersCountReport",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerOrdersCountReport"
+				}
+			],
+			"transformations": [
+				{
+					"name": "customerorders"
+				},
+				{
+					"name": "Group"
+				},
+				{
+					"name": "Report"
+				},
+				{
+					"name": "AlterRow"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Id as integer,",
+				"          Name as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'SERIALIZABLE',",
+				"     format: 'table') ~> Customers",
+				"source(output(",
+				"          Id as integer,",
+				"          CustomerId as integer,",
+				"          Details as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> Orders",
+				"Customers, Orders join(Customers@Id == CustomerId,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> customerorders",
+				"customerorders aggregate(groupBy(Customers@Id),",
+				"     OrdersCount = count(Orders@Id)) ~> Group",
+				"Group select(mapColumn(",
+				"          Id,",
+				"          OrdersCount",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> Report",
+				"Report alterRow(updateIf(isUpdate()==true()),",
+				"     deleteIf(isDelete()==true()),",
+				"     insertIf(isInsert()==true())) ~> AlterRow",
+				"AlterRow sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Id as integer,",
+				"          OrdersCount as integer",
+				"     ),",
+				"     deletable:true,",
+				"     insertable:true,",
+				"     updateable:true,",
+				"     upsertable:false,",
+				"     keys:['Id'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> CustomerOrdersCountReport"
+			]
+		}
+	}
+}
