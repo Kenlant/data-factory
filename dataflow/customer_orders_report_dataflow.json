@@ -37,6 +37,9 @@
 				},
 				{
 					"name": "Report"
+				},
+				{
+					"name": "AlterRow"
 				}
 			],
 			"scriptLines": [
@@ -70,17 +73,20 @@
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> Report",
-				"Report sink(allowSchemaDrift: true,",
+				"Report alterRow(updateIf(isDelete()),",
+				"     deleteIf(isDelete()),",
+				"     upsertIf(isDelete()),",
+				"     insertIf(isDelete())) ~> AlterRow",
+				"AlterRow sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          Id as integer,",
 				"          OrdersCount as integer",
 				"     ),",
-				"     deletable:false,",
+				"     deletable:true,",
 				"     insertable:true,",
-				"     updateable:false,",
-				"     upsertable:false,",
-				"     truncate:true,",
+				"     updateable:true,",
+				"     upsertable:true,",
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
