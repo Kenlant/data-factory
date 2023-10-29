@@ -190,13 +190,6 @@
 								"type": "DatasetReference"
 							},
 							"name": "Orders"
-						},
-						{
-							"dataset": {
-								"referenceName": "CustomerOrdersCountReport",
-								"type": "DatasetReference"
-							},
-							"name": "CustomerOrdersCountReportSource"
 						}
 					],
 					"sinks": [
@@ -237,14 +230,6 @@
 						"     validateSchema: false,",
 						"     isolationLevel: 'READ_UNCOMMITTED',",
 						"     format: 'table') ~> Orders",
-						"source(output(",
-						"          Id as integer,",
-						"          OrdersCount as integer",
-						"     ),",
-						"     allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     isolationLevel: 'SERIALIZABLE',",
-						"     format: 'table') ~> CustomerOrdersCountReportSource",
 						"Customers, Orders join(Customers@Id == CustomerId,",
 						"     joinType:'inner',",
 						"     matchType:'exact',",
@@ -308,7 +293,6 @@
 								"datasetParameters": {
 									"Customers": {},
 									"Orders": {},
-									"CustomerOrdersCountReportSource": {},
 									"CustomerOrdersCountReport": {}
 								}
 							},
