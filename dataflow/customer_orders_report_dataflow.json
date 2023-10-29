@@ -17,6 +17,13 @@
 						"type": "DatasetReference"
 					},
 					"name": "Orders"
+				},
+				{
+					"dataset": {
+						"referenceName": "CustomerOrdersCountReport",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerOrdersCountReportSource"
 				}
 			],
 			"sinks": [
@@ -36,10 +43,7 @@
 					"name": "Group"
 				},
 				{
-					"name": "Report"
-				},
-				{
-					"name": "AlterRow"
+					"name": "Select"
 				}
 			],
 			"scriptLines": [
@@ -60,6 +64,14 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> Orders",
+				"source(output(",
+				"          Id as integer,",
+				"          OrdersCount as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'SERIALIZABLE',",
+				"     format: 'table') ~> CustomerOrdersCountReportSource",
 				"Customers, Orders join(Customers@Id == CustomerId,",
 				"     joinType:'inner',",
 				"     matchType:'exact',",
@@ -72,21 +84,18 @@
 				"          OrdersCount",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> Report",
-				"Report alterRow(updateIf(isDelete()),",
-				"     deleteIf(isDelete()),",
-				"     upsertIf(isDelete()),",
-				"     insertIf(isDelete())) ~> AlterRow",
-				"AlterRow sink(allowSchemaDrift: true,",
+				"     skipDuplicateMapOutputs: true) ~> Select",
+				"Select sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          Id as integer,",
 				"          OrdersCount as integer",
 				"     ),",
-				"     deletable:true,",
+				"     deletable:false,",
 				"     insertable:true,",
-				"     updateable:true,",
-				"     upsertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     truncate:true,",
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
